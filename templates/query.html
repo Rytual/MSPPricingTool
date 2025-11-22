@@ -421,12 +421,12 @@
                             <tr>
                                 <th>Product</th>
                                 <th>SKU Title</th>
-                                <th>SKU ID</th>
+                                <th>Segment</th>
                                 <th>Term</th>
                                 <th>Billing</th>
-                                <th>Segment</th>
-                                <th>Base Price</th>
-                                <th>Currency</th>
+                                <th>MS Price</th>
+                                <th>Your Price</th>
+                                <th>Markup %</th>
                             </tr>
                         </thead>
                         <tbody id="resultsBody">
@@ -581,15 +581,21 @@
             results.forEach(result => {
                 const row = document.createElement('tr');
                 row.dataset.id = result.id;
+
+                // Color code markup: green for good profit, yellow for low
+                let markupColor = 'success';
+                if (result.MarkupPercent < 15) markupColor = 'warning';
+                if (result.MarkupPercent < 5) markupColor = 'danger';
+
                 row.innerHTML = `
                     <td>${result.ProductTitle}</td>
                     <td>${result.SkuTitle}</td>
-                    <td><small>${result.SkuId}</small></td>
+                    <td><span class="badge bg-info">${result.Segment}</span></td>
                     <td>${result.TermDurationHuman}</td>
                     <td>${result.BillingPlan}</td>
-                    <td><span class="badge bg-info">${result.Segment}</span></td>
                     <td><strong>$${parseFloat(result.UnitPrice).toFixed(2)}</strong></td>
-                    <td>${result.Currency}</td>
+                    <td><strong class="text-success">$${parseFloat(result.ERPPrice).toFixed(2)}</strong></td>
+                    <td><span class="badge bg-${markupColor}">${result.MarkupPercent}%</span></td>
                 `;
 
                 row.addEventListener('click', () => selectPrice(result, row));
@@ -621,22 +627,27 @@
 
         function updatePriceDisplay(price) {
             const margin = parseInt(document.getElementById('marginSlider').value);
-            const basePrice = parseFloat(price.UnitPrice);
-            const finalPrice = basePrice * (1 + margin / 100);
+            const msPrice = parseFloat(price.UnitPrice);
+            const erpPrice = parseFloat(price.ERPPrice);
+            const standardMarkup = parseFloat(price.MarkupPercent);
+            const finalPrice = msPrice * (1 + margin / 100);
+            const profit = finalPrice - msPrice;
 
             const display = document.getElementById('priceDisplay');
             display.classList.add('pulse');
             setTimeout(() => display.classList.remove('pulse'), 500);
 
+            // Show the quote price (with margin adjustment)
             document.getElementById('priceAmount').textContent = `$${finalPrice.toFixed(2)}`;
             document.getElementById('priceDetails').innerHTML = `
-                <div>Base: $${basePrice.toFixed(2)} | Margin: ${margin}%</div>
-                <div class="mt-1"><small>${price.SkuTitle}</small></div>
+                <div><strong>MS Cost:</strong> $${msPrice.toFixed(2)} | <strong>Your Markup:</strong> ${margin}% | <strong>Profit:</strong> $${profit.toFixed(2)}</div>
+                <div class="mt-2"><small><strong>Standard Price:</strong> $${erpPrice.toFixed(2)} (${standardMarkup}% markup)</small></div>
+                <div class="mt-2"><small>${price.SkuTitle}</small></div>
                 <div><small>${price.TermDurationHuman} | ${price.BillingPlan}</small></div>
             `;
 
             const label = document.querySelector('.price-label');
-            label.textContent = 'Final Price /user/month';
+            label.textContent = 'Quote Price /user/month';
         }
 
         // Margin slider

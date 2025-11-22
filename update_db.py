@@ -105,22 +105,12 @@ def set_last_csv_hash(hash_value):
     conn.close()
 
 def filter_active_prices(df):
-    """Filter to only include currently active prices"""
-    # Use pandas Timestamp to handle timezone-aware comparisons
-    today = pd.Timestamp.now(tz='UTC')
-
-    # Parse dates
-    df['EffectiveStartDate'] = pd.to_datetime(df['EffectiveStartDate'], errors='coerce', utc=True)
-    df['EffectiveEndDate'] = pd.to_datetime(df['EffectiveEndDate'], errors='coerce', utc=True)
-
-    # Filter active prices (start date <= today AND end date >= today or far future)
-    active_df = df[
-        (df['EffectiveStartDate'] <= today) &
-        (df['EffectiveEndDate'] >= today)
-    ].copy()
-
-    logger.info(f"Filtered {len(active_df)} active prices from {len(df)} total records")
-    return active_df
+    """
+    No filtering needed - all pricing rows in CSV are active (EffectiveEndDate = 9999-11-30 means 'never expires')
+    Simply return all rows from CSV for import
+    """
+    logger.info(f"Importing all {len(df)} pricing records from CSV")
+    return df.copy()
 
 def ingest_csv(csv_path, force=False):
     """Ingest CSV file into database"""
@@ -148,16 +138,12 @@ def ingest_csv(csv_path, force=False):
         if 'ERP Price' in df.columns:
             df.rename(columns={'ERP Price': 'ERPPrice'}, inplace=True)
 
-        # Filter active prices
+        # Get all pricing records (no date filtering needed)
         active_df = filter_active_prices(df)
 
         if active_df.empty:
-            logger.warning("No active prices found in CSV")
+            logger.warning("No pricing records found in CSV")
             return False
-
-        # Convert dates back to strings for storage
-        active_df['EffectiveStartDate'] = active_df['EffectiveStartDate'].dt.strftime('%Y-%m-%d %H:%M:%S')
-        active_df['EffectiveEndDate'] = active_df['EffectiveEndDate'].dt.strftime('%Y-%m-%d %H:%M:%S')
 
         # Initialize database
         init_database()

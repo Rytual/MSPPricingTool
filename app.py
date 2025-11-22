@@ -191,22 +191,28 @@ def query_prices():
         # Convert to list of dicts
         results = []
         for row in rows:
+            unit_price = float(row['UnitPrice']) if row['UnitPrice'] else 0
+            erp_price = float(row['ERPPrice']) if row['ERPPrice'] else 0
+
+            # Calculate markup percentage: ((ERP - MS) / MS) * 100
+            markup_percent = 0
+            if unit_price > 0:
+                markup_percent = ((erp_price - unit_price) / unit_price) * 100
+
             results.append({
                 'id': row['id'],
                 'ProductTitle': row['ProductTitle'],
-                'ProductId': row['ProductId'],
-                'SkuId': row['SkuId'],
                 'SkuTitle': row['SkuTitle'],
-                'SkuDescription': row['SkuDescription'],
                 'TermDuration': row['TermDuration'],
                 'TermDurationHuman': term_duration_to_human(row['TermDuration']),
                 'BillingPlan': row['BillingPlan'],
-                'UnitPrice': row['UnitPrice'],
-                'ERPPrice': row['ERPPrice'],
+                'UnitPrice': unit_price,
+                'ERPPrice': erp_price,
+                'MarkupPercent': round(markup_percent, 1),
+                'ProfitPerLicense': round(erp_price - unit_price, 2),
                 'Currency': row['Currency'],
                 'Segment': row['Segment'],
-                'EffectiveStartDate': row['EffectiveStartDate'],
-                'Market': row['Market'],
+                'SkuDescription': row['SkuDescription'],
                 'Publisher': row['Publisher']
             })
 
@@ -235,8 +241,20 @@ def get_price_detail(price_id):
         if not row:
             return jsonify({'error': 'Price not found'}), 404
 
+        unit_price = float(row['UnitPrice']) if row['UnitPrice'] else 0
+        erp_price = float(row['ERPPrice']) if row['ERPPrice'] else 0
+
+        # Calculate markup percentage
+        markup_percent = 0
+        if unit_price > 0:
+            markup_percent = ((erp_price - unit_price) / unit_price) * 100
+
         price_detail = dict(row)
         price_detail['TermDurationHuman'] = term_duration_to_human(row['TermDuration'])
+        price_detail['UnitPrice'] = unit_price
+        price_detail['ERPPrice'] = erp_price
+        price_detail['MarkupPercent'] = round(markup_percent, 1)
+        price_detail['ProfitPerLicense'] = round(erp_price - unit_price, 2)
 
         conn.close()
 
@@ -265,11 +283,21 @@ def generate_draft():
         if not row:
             return jsonify({'error': 'Price not found'}), 404
 
-        # Calculate final price with margin
-        base_price = float(row['UnitPrice'])
-        margin_multiplier = 1 + (margin / 100)
-        final_price = base_price * margin_multiplier
-        total_est = final_price * quantity
+        # Calculate prices
+        ms_price = float(row['UnitPrice'])  # What Microsoft charges us
+        erp_price = float(row['ERPPrice']) if row['ERPPrice'] else 0  # Our standard price
+
+        # Calculate standard markup
+        standard_markup = 0
+        if ms_price > 0:
+            standard_markup = ((erp_price - ms_price) / ms_price) * 100
+
+        # Apply margin adjustment from slider
+        final_price = ms_price * (1 + margin / 100)
+        profit_per_license = final_price - ms_price
+        total_cost = ms_price * quantity
+        total_price = final_price * quantity
+        total_profit = total_price - total_cost
 
         # Generate draft text
         draft_text = f"""
@@ -283,27 +311,31 @@ PRODUCT INFORMATION
 -------------------
 Product:        {row['ProductTitle']}
 SKU:            {row['SkuTitle']}
-SKU ID:         {row['SkuId']}
-Publisher:      {row['Publisher']}
+Segment:        {row['Segment']}
 
-PRICING DETAILS
----------------
+PRICING BREAKDOWN (per user/month)
+-----------------------------------
+Microsoft Cost:     ${ms_price:.2f}
+Your Markup:        {margin}%
+Quote Price:        ${final_price:.2f}
+Profit/License:     ${profit_per_license:.2f}
+
+Standard Price:     ${erp_price:.2f} (Standard Markup: {standard_markup:.1f}%)
+
+CONTRACT DETAILS
+----------------
 Term:           {term_duration_to_human(row['TermDuration'])}
 Billing:        {row['BillingPlan']}
-Segment:        {row['Segment']}
 Currency:       {row['Currency']}
 
-Base Price:     ${base_price:.2f} /user/month
-Margin:         {margin}%
-Final Price:    ${final_price:.2f} /user/month
+QUANTITY & TOTALS
+-----------------
+Quantity:       {quantity} licenses
+Monthly Cost:   ${total_cost:.2f}
+Monthly Quote:  ${total_price:.2f}
+Monthly Profit: ${total_profit:.2f}
 
-Quantity:       {quantity} [Edit as needed]
-Total Est:      ${total_est:.2f} /month
-
-EFFECTIVE DATES
----------------
-From:           {row['EffectiveStartDate']}
-To:             {row['EffectiveEndDate']}
+Annual Total:   ${total_price * 12:.2f} (if monthly billing)
 
 DESCRIPTION
 -----------
@@ -312,8 +344,7 @@ DESCRIPTION
 NOTES
 -----
 - Pricing is based on Microsoft NCE License-Based pricing
-- Final pricing subject to Microsoft's terms and conditions
-- Quantity and margin can be adjusted as needed
+- Adjust quantity and margin as needed for final quote
 - Contact eMazzanti Technologies for final quote approval
 
 ========================================
