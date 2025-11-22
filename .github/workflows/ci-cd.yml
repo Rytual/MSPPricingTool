@@ -1,0 +1,101 @@
+name: Build and Release MSP Pricing Tool
+
+on:
+  push:
+    branches: [ main, master ]
+    tags:
+      - 'v*'
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+
+    - name: Lint with flake8 (optional)
+      continue-on-error: true
+      run: |
+        pip install flake8
+        flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics || true
+
+    - name: Build EXE with PyInstaller
+      run: |
+        pyinstaller msp_pricing.spec
+
+    - name: List dist directory
+      run: |
+        dir dist
+
+    - name: Create distribution package
+      run: |
+        mkdir release
+        copy dist\MSP_NCE_Pricing_Tool.exe release\
+        copy install_service.bat release\
+        copy setup_auto_update.bat release\
+        copy auto_update.py release\
+        copy instructions.md release\
+        copy instructions.docx release\
+        copy README.md release\
+        xcopy templates release\templates\ /E /I
+
+    - name: Upload artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: MSP-NCE-Pricing-Tool-Windows
+        path: release/
+
+    - name: Create Release (on tag)
+      if: startsWith(github.ref, 'refs/tags/v')
+      uses: softprops/action-gh-release@v2
+      with:
+        files: |
+          dist/MSP_NCE_Pricing_Tool.exe
+          instructions.md
+          instructions.docx
+          README.md
+        draft: false
+        prerelease: false
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  test:
+    runs-on: windows-latest
+    needs: build
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        pip install pytest
+
+    - name: Run tests (if tests exist)
+      continue-on-error: true
+      run: |
+        if (Test-Path tests) {
+          pytest tests/
+        } else {
+          Write-Output "No tests directory found, skipping tests"
+        }

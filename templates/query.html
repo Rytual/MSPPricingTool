@@ -1,0 +1,794 @@
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MSP NCE Pricing Tool - eMazzanti Technologies</title>
+
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.min.css" rel="stylesheet">
+    <!-- DataTables CSS -->
+    <link href="https://cdn.datatables.net/1.13.7/css/dataTables.bootstrap5.min.css" rel="stylesheet">
+
+    <style>
+        :root {
+            --primary-color: #0078d4;
+            --secondary-color: #106ebe;
+            --success-color: #107c10;
+            --surface-light: #ffffff;
+            --surface-dark: #1e1e1e;
+            --text-light: #323130;
+            --text-dark: #ffffff;
+            --border-light: #edebe9;
+            --border-dark: #3b3b3b;
+        }
+
+        [data-bs-theme="dark"] {
+            --bs-body-bg: var(--surface-dark);
+            --bs-body-color: var(--text-dark);
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            transition: background-color 0.3s ease;
+        }
+
+        .header-bar {
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: white;
+            padding: 1.5rem 0;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            margin-bottom: 2rem;
+        }
+
+        .header-bar h1 {
+            font-size: 1.8rem;
+            font-weight: 600;
+            margin: 0;
+        }
+
+        .header-bar small {
+            opacity: 0.9;
+        }
+
+        .card {
+            border: none;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            border-radius: 8px;
+            margin-bottom: 1.5rem;
+            transition: all 0.3s ease;
+        }
+
+        [data-bs-theme="dark"] .card {
+            background-color: #2d2d2d;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+        }
+
+        .card:hover {
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+
+        .filter-section {
+            padding: 1.5rem;
+        }
+
+        .form-select, .form-control {
+            border-radius: 4px;
+            border: 1px solid var(--border-light);
+            transition: all 0.2s ease;
+        }
+
+        [data-bs-theme="dark"] .form-select,
+        [data-bs-theme="dark"] .form-control {
+            background-color: #3b3b3b;
+            border-color: var(--border-dark);
+            color: var(--text-dark);
+        }
+
+        .form-select:focus, .form-control:focus {
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(0, 120, 212, 0.1);
+        }
+
+        .price-display {
+            background: linear-gradient(135deg, #107c10, #0b5a0b);
+            color: white;
+            border-radius: 12px;
+            padding: 2rem;
+            text-align: center;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            min-height: 200px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            transition: all 0.3s ease;
+        }
+
+        .price-display.pulse {
+            animation: pulse 0.5s ease;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+
+        .price-amount {
+            font-size: 4rem;
+            font-weight: 700;
+            line-height: 1;
+            margin: 0.5rem 0;
+        }
+
+        .price-label {
+            font-size: 1.2rem;
+            opacity: 0.95;
+            font-weight: 500;
+        }
+
+        .price-details {
+            font-size: 0.95rem;
+            margin-top: 1rem;
+            opacity: 0.9;
+        }
+
+        .margin-slider {
+            padding: 1.5rem;
+        }
+
+        .margin-value {
+            font-size: 2rem;
+            font-weight: 600;
+            color: var(--primary-color);
+        }
+
+        .form-range {
+            height: 8px;
+        }
+
+        .form-range::-webkit-slider-thumb {
+            background: var(--primary-color);
+            width: 20px;
+            height: 20px;
+        }
+
+        .table-container {
+            max-height: 600px;
+            overflow-y: auto;
+            border-radius: 8px;
+        }
+
+        .table {
+            margin: 0;
+        }
+
+        .table thead {
+            position: sticky;
+            top: 0;
+            background-color: var(--primary-color);
+            color: white;
+            z-index: 10;
+        }
+
+        .table tbody tr {
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .table tbody tr:nth-child(even) {
+            background-color: rgba(0, 120, 212, 0.05);
+        }
+
+        [data-bs-theme="dark"] .table tbody tr:nth-child(even) {
+            background-color: rgba(255, 255, 255, 0.05);
+        }
+
+        .table tbody tr:hover {
+            background-color: rgba(0, 120, 212, 0.15);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+
+        .table tbody tr.selected {
+            background-color: rgba(0, 120, 212, 0.25);
+            font-weight: 600;
+        }
+
+        .btn-primary {
+            background-color: var(--primary-color);
+            border: none;
+            padding: 0.6rem 1.5rem;
+            border-radius: 4px;
+            font-weight: 500;
+            transition: all 0.2s ease;
+        }
+
+        .btn-primary:hover {
+            background-color: var(--secondary-color);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        }
+
+        .btn-success {
+            background-color: var(--success-color);
+            border: none;
+        }
+
+        .btn-success:hover {
+            background-color: #0b5a0b;
+        }
+
+        .stats-badge {
+            font-size: 0.9rem;
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            background-color: rgba(255,255,255,0.2);
+        }
+
+        .theme-toggle {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            width: 56px;
+            height: 56px;
+            border-radius: 50%;
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            z-index: 1000;
+        }
+
+        .theme-toggle:hover {
+            transform: scale(1.1) rotate(180deg);
+            box-shadow: 0 6px 16px rgba(0,0,0,0.4);
+        }
+
+        .spinner-border-sm {
+            width: 1rem;
+            height: 1rem;
+        }
+
+        .tooltip-inner {
+            max-width: 300px;
+        }
+
+        .loading-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 9999;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .loading-overlay.show {
+            display: flex;
+        }
+
+        @media (max-width: 768px) {
+            .price-amount {
+                font-size: 2.5rem;
+            }
+
+            .header-bar h1 {
+                font-size: 1.3rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Loading Overlay -->
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="spinner-border text-light" role="status" style="width: 3rem; height: 3rem;">
+            <span class="visually-hidden">Loading...</span>
+        </div>
+    </div>
+
+    <!-- Header -->
+    <div class="header-bar">
+        <div class="container">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h1><i class="bi bi-currency-dollar"></i> MSP NCE Pricing Tool</h1>
+                    <small>eMazzanti Technologies - Microsoft Partner Center Pricing</small>
+                </div>
+                <div>
+                    <span class="stats-badge" id="statsDisplay">
+                        <i class="bi bi-database"></i> <span id="totalCount">0</span> prices
+                    </span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <!-- Filters Card -->
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0"><i class="bi bi-funnel"></i> Filter Pricing</h5>
+            </div>
+            <div class="card-body filter-section">
+                <div class="row g-3">
+                    <div class="col-md-3">
+                        <label class="form-label">Product</label>
+                        <select class="form-select" id="productFilter" data-bs-toggle="tooltip" title="Select a Microsoft product">
+                            <option value="">All Products</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Segment</label>
+                        <select class="form-select" id="segmentFilter" data-bs-toggle="tooltip" title="Customer segment type">
+                            <option value="">All Segments</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Term Duration</label>
+                        <select class="form-select" id="termFilter" data-bs-toggle="tooltip" title="Contract term length">
+                            <option value="">All Terms</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Billing Plan</label>
+                        <select class="form-select" id="billingFilter" data-bs-toggle="tooltip" title="Billing frequency">
+                            <option value="">All Plans</option>
+                        </select>
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label">Search</label>
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="bi bi-search"></i></span>
+                            <input type="text" class="form-control" id="searchInput" placeholder="Search products, SKUs, descriptions...">
+                        </div>
+                    </div>
+                    <div class="col-12">
+                        <button class="btn btn-primary" id="queryBtn">
+                            <i class="bi bi-search"></i> Search Pricing
+                        </button>
+                        <button class="btn btn-outline-secondary" id="resetBtn">
+                            <i class="bi bi-arrow-counterclockwise"></i> Reset
+                        </button>
+                        <button class="btn btn-outline-success" id="exportBtn" disabled>
+                            <i class="bi bi-file-earmark-spreadsheet"></i> Export to CSV
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Price Display and Margin Card -->
+        <div class="row">
+            <div class="col-md-7">
+                <div class="card">
+                    <div class="card-body">
+                        <div class="price-display" id="priceDisplay">
+                            <div class="price-label">Select a product to see pricing</div>
+                            <div class="price-amount" id="priceAmount">--</div>
+                            <div class="price-details" id="priceDetails"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-5">
+                <div class="card">
+                    <div class="card-header">
+                        <h6 class="mb-0"><i class="bi bi-percent"></i> Margin Calculator</h6>
+                    </div>
+                    <div class="card-body margin-slider">
+                        <div class="text-center mb-3">
+                            <div class="margin-value" id="marginDisplay">20%</div>
+                            <small class="text-muted">Markup Percentage</small>
+                        </div>
+                        <input type="range" class="form-range" min="0" max="50" step="1" value="20" id="marginSlider">
+                        <div class="d-flex justify-content-between">
+                            <small>0%</small>
+                            <small>50%</small>
+                        </div>
+                        <hr>
+                        <div class="mb-2">
+                            <label class="form-label">Quantity</label>
+                            <input type="number" class="form-control" id="quantityInput" value="1" min="1">
+                        </div>
+                        <button class="btn btn-success w-100" id="draftBtn" disabled>
+                            <i class="bi bi-file-earmark-text"></i> Generate Quote Draft
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Results Table -->
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0"><i class="bi bi-table"></i> Pricing Results <span class="badge bg-light text-dark" id="resultCount">0</span></h5>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-container">
+                    <table class="table table-hover mb-0" id="resultsTable">
+                        <thead>
+                            <tr>
+                                <th>Product</th>
+                                <th>SKU Title</th>
+                                <th>SKU ID</th>
+                                <th>Term</th>
+                                <th>Billing</th>
+                                <th>Segment</th>
+                                <th>Base Price</th>
+                                <th>Currency</th>
+                            </tr>
+                        </thead>
+                        <tbody id="resultsBody">
+                            <tr>
+                                <td colspan="8" class="text-center text-muted p-5">
+                                    <i class="bi bi-inbox" style="font-size: 3rem;"></i>
+                                    <p class="mt-3">No results yet. Use the filters above to search pricing.</p>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Theme Toggle Button -->
+    <button class="theme-toggle" id="themeToggle" data-bs-toggle="tooltip" title="Toggle dark mode">
+        <i class="bi bi-moon-fill" id="themeIcon"></i>
+    </button>
+
+    <!-- jQuery -->
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <!-- Bootstrap 5 JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- DataTables JS -->
+    <script src="https://cdn.datatables.net/1.13.7/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.7/js/dataTables.bootstrap5.min.js"></script>
+
+    <script>
+        let currentResults = [];
+        let selectedPrice = null;
+        let dataTable = null;
+
+        // Initialize tooltips
+        const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]');
+        const tooltipList = [...tooltipTriggerList].map(el => new bootstrap.Tooltip(el));
+
+        // Theme toggle
+        const themeToggle = document.getElementById('themeToggle');
+        const themeIcon = document.getElementById('themeIcon');
+        const htmlElement = document.documentElement;
+
+        // Load saved theme
+        const savedTheme = localStorage.getItem('theme') || 'light';
+        htmlElement.setAttribute('data-bs-theme', savedTheme);
+        updateThemeIcon(savedTheme);
+
+        themeToggle.addEventListener('click', () => {
+            const currentTheme = htmlElement.getAttribute('data-bs-theme');
+            const newTheme = currentTheme === 'light' ? 'dark' : 'light';
+            htmlElement.setAttribute('data-bs-theme', newTheme);
+            localStorage.setItem('theme', newTheme);
+            updateThemeIcon(newTheme);
+        });
+
+        function updateThemeIcon(theme) {
+            if (theme === 'dark') {
+                themeIcon.className = 'bi bi-sun-fill';
+            } else {
+                themeIcon.className = 'bi bi-moon-fill';
+            }
+        }
+
+        // Load filters on page load
+        async function loadFilters() {
+            try {
+                const response = await fetch('/api/filters');
+                const data = await response.json();
+
+                populateSelect('productFilter', data.products);
+                populateSelect('segmentFilter', data.segments);
+                populateSelect('termFilter', data.terms);
+                populateSelect('billingFilter', data.billing);
+            } catch (error) {
+                console.error('Error loading filters:', error);
+                showToast('Error loading filters', 'error');
+            }
+        }
+
+        function populateSelect(id, options) {
+            const select = document.getElementById(id);
+            const currentValue = select.value;
+
+            // Keep first option (All...)
+            const firstOption = select.options[0];
+            select.innerHTML = '';
+            select.appendChild(firstOption);
+
+            options.forEach(option => {
+                const opt = document.createElement('option');
+                opt.value = option;
+                opt.textContent = option;
+                select.appendChild(opt);
+            });
+
+            if (currentValue) {
+                select.value = currentValue;
+            }
+        }
+
+        // Query prices
+        async function queryPrices() {
+            showLoading(true);
+
+            const filters = {
+                product: document.getElementById('productFilter').value,
+                segment: document.getElementById('segmentFilter').value,
+                term: document.getElementById('termFilter').value,
+                billing: document.getElementById('billingFilter').value,
+                search: document.getElementById('searchInput').value
+            };
+
+            try {
+                const response = await fetch('/api/query', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(filters)
+                });
+
+                const data = await response.json();
+                currentResults = data.results;
+                displayResults(data.results);
+                document.getElementById('resultCount').textContent = data.count;
+                document.getElementById('exportBtn').disabled = data.count === 0;
+            } catch (error) {
+                console.error('Error querying prices:', error);
+                showToast('Error querying prices', 'error');
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        function displayResults(results) {
+            const tbody = document.getElementById('resultsBody');
+
+            if (results.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="8" class="text-center text-muted p-5">
+                            <i class="bi bi-inbox" style="font-size: 3rem;"></i>
+                            <p class="mt-3">No results found. Try adjusting your filters.</p>
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+
+            tbody.innerHTML = '';
+            results.forEach(result => {
+                const row = document.createElement('tr');
+                row.dataset.id = result.id;
+                row.innerHTML = `
+                    <td>${result.ProductTitle}</td>
+                    <td>${result.SkuTitle}</td>
+                    <td><small>${result.SkuId}</small></td>
+                    <td>${result.TermDurationHuman}</td>
+                    <td>${result.BillingPlan}</td>
+                    <td><span class="badge bg-info">${result.Segment}</span></td>
+                    <td><strong>$${parseFloat(result.UnitPrice).toFixed(2)}</strong></td>
+                    <td>${result.Currency}</td>
+                `;
+
+                row.addEventListener('click', () => selectPrice(result, row));
+                tbody.appendChild(row);
+            });
+        }
+
+        function selectPrice(price, row) {
+            // Remove previous selection
+            document.querySelectorAll('#resultsBody tr').forEach(tr => {
+                tr.classList.remove('selected');
+            });
+
+            // Add selection
+            row.classList.add('selected');
+            selectedPrice = price;
+
+            // Update price display
+            updatePriceDisplay(price);
+
+            // Enable draft button
+            document.getElementById('draftBtn').disabled = false;
+
+            // Scroll to price display on mobile
+            if (window.innerWidth < 768) {
+                document.getElementById('priceDisplay').scrollIntoView({ behavior: 'smooth' });
+            }
+        }
+
+        function updatePriceDisplay(price) {
+            const margin = parseInt(document.getElementById('marginSlider').value);
+            const basePrice = parseFloat(price.UnitPrice);
+            const finalPrice = basePrice * (1 + margin / 100);
+
+            const display = document.getElementById('priceDisplay');
+            display.classList.add('pulse');
+            setTimeout(() => display.classList.remove('pulse'), 500);
+
+            document.getElementById('priceAmount').textContent = `$${finalPrice.toFixed(2)}`;
+            document.getElementById('priceDetails').innerHTML = `
+                <div>Base: $${basePrice.toFixed(2)} | Margin: ${margin}%</div>
+                <div class="mt-1"><small>${price.SkuTitle}</small></div>
+                <div><small>${price.TermDurationHuman} | ${price.BillingPlan}</small></div>
+            `;
+
+            const label = document.querySelector('.price-label');
+            label.textContent = 'Final Price /user/month';
+        }
+
+        // Margin slider
+        document.getElementById('marginSlider').addEventListener('input', (e) => {
+            const margin = e.target.value;
+            document.getElementById('marginDisplay').textContent = `${margin}%`;
+
+            if (selectedPrice) {
+                updatePriceDisplay(selectedPrice);
+            }
+        });
+
+        // Generate draft
+        document.getElementById('draftBtn').addEventListener('click', async () => {
+            if (!selectedPrice) return;
+
+            const margin = parseInt(document.getElementById('marginSlider').value);
+            const quantity = parseInt(document.getElementById('quantityInput').value);
+
+            showLoading(true);
+
+            try {
+                const response = await fetch('/api/draft', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        price_id: selectedPrice.id,
+                        margin: margin,
+                        quantity: quantity
+                    })
+                });
+
+                const data = await response.json();
+                if (data.success) {
+                    showToast('Quote draft opened in Notepad', 'success');
+                } else {
+                    showToast('Error generating draft', 'error');
+                }
+            } catch (error) {
+                console.error('Error generating draft:', error);
+                showToast('Error generating draft', 'error');
+            } finally {
+                showLoading(false);
+            }
+        });
+
+        // Export to CSV
+        document.getElementById('exportBtn').addEventListener('click', async () => {
+            if (currentResults.length === 0) return;
+
+            showLoading(true);
+
+            try {
+                const response = await fetch('/api/export', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        results: currentResults
+                    })
+                });
+
+                const blob = await response.blob();
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `pricing_export_${new Date().getTime()}.csv`;
+                a.click();
+                window.URL.revokeObjectURL(url);
+
+                showToast('Export successful', 'success');
+            } catch (error) {
+                console.error('Error exporting:', error);
+                showToast('Error exporting data', 'error');
+            } finally {
+                showLoading(false);
+            }
+        });
+
+        // Reset filters
+        document.getElementById('resetBtn').addEventListener('click', () => {
+            document.getElementById('productFilter').value = '';
+            document.getElementById('segmentFilter').value = '';
+            document.getElementById('termFilter').value = '';
+            document.getElementById('billingFilter').value = '';
+            document.getElementById('searchInput').value = '';
+            document.getElementById('resultsBody').innerHTML = `
+                <tr>
+                    <td colspan="8" class="text-center text-muted p-5">
+                        <i class="bi bi-inbox" style="font-size: 3rem;"></i>
+                        <p class="mt-3">No results yet. Use the filters above to search pricing.</p>
+                    </td>
+                </tr>
+            `;
+            document.getElementById('resultCount').textContent = '0';
+            document.getElementById('exportBtn').disabled = true;
+            document.getElementById('draftBtn').disabled = true;
+            selectedPrice = null;
+
+            // Reset price display
+            document.getElementById('priceAmount').textContent = '--';
+            document.querySelector('.price-label').textContent = 'Select a product to see pricing';
+            document.getElementById('priceDetails').innerHTML = '';
+        });
+
+        // Query button
+        document.getElementById('queryBtn').addEventListener('click', queryPrices);
+
+        // Enter key to search
+        document.getElementById('searchInput').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                queryPrices();
+            }
+        });
+
+        // Load stats
+        async function loadStats() {
+            try {
+                const response = await fetch('/api/stats');
+                const data = await response.json();
+                document.getElementById('totalCount').textContent = data.total_prices;
+            } catch (error) {
+                console.error('Error loading stats:', error);
+            }
+        }
+
+        // Helper functions
+        function showLoading(show) {
+            const overlay = document.getElementById('loadingOverlay');
+            if (show) {
+                overlay.classList.add('show');
+            } else {
+                overlay.classList.remove('show');
+            }
+        }
+
+        function showToast(message, type = 'info') {
+            // Simple console log for now - can be enhanced with actual toast notifications
+            console.log(`[${type.toUpperCase()}] ${message}`);
+
+            // You could add a toast library like bootstrap-notify or toastr here
+            alert(message);
+        }
+
+        // Initialize on page load
+        document.addEventListener('DOMContentLoaded', () => {
+            loadFilters();
+            loadStats();
+        });
+    </script>
+</body>
+</html>
