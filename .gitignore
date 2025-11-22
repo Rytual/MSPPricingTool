@@ -28,6 +28,7 @@ env/
 
 # PyInstaller
 *.spec
+!msp_pricing.spec
 
 # Application data
 data/
@@ -58,3 +59,7 @@ Desktop.ini
 # Build artifacts
 *.exe
 !dist/*.exe
+
+# Development files
+.claude/
+price-prompt.txt
