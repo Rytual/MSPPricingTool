@@ -6,7 +6,6 @@ __pycache__/
 .Python
 build/
 develop-eggs/
-dist/
 downloads/
 eggs/
 .eggs/
@@ -30,7 +29,7 @@ env/
 *.spec
 !msp_pricing.spec
 
-# Application data
+# Application data (created at runtime)
 data/
 logs/
 *.db
@@ -55,10 +54,6 @@ Desktop.ini
 *.tmp
 *.temp
 ~$*
-
-# Build artifacts
-*.exe
-!dist/*.exe
 
 # Development files
 .claude/
