@@ -24,6 +24,13 @@ def initial_setup():
     """Perform initial setup on first run"""
     logger.info("Starting MSP NCE Pricing Tool")
 
+    # Set default credentials if not already configured
+    from config import config
+    if not config.ui_password:
+        logger.info("Setting default credentials")
+        config.ui_username = "Admin"
+        config.ui_password = "Action4T1m3"
+
     # Initialize database
     from update_db import init_database
     init_database()

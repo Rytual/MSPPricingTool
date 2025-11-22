@@ -41,6 +41,11 @@ def requires_auth(f):
     """Decorator for routes requiring authentication"""
     @wraps(f)
     def decorated(*args, **kwargs):
+        # Skip authentication if no password is configured
+        if not config.ui_password:
+            return f(*args, **kwargs)
+
+        # Require authentication if password is set
         auth = request.authorization
         if not auth or not check_auth(auth.username, auth.password):
             return authenticate()

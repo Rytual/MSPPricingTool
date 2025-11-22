@@ -3,6 +3,7 @@ Configuration management for MSP Pricing Application
 Handles secure storage of credentials and application settings
 """
 import os
+import sys
 import json
 from cryptography.fernet import Fernet
 from pathlib import Path
@@ -14,8 +15,14 @@ DB_NAME = "nce_pricing.db"
 PORT = 5000
 HOST = "0.0.0.0"  # Network accessible
 
-# Paths
-BASE_DIR = Path(__file__).parent.absolute()
+# Paths - handle PyInstaller frozen executable
+if getattr(sys, 'frozen', False):
+    # Running as compiled executable
+    BASE_DIR = Path(sys.executable).parent.absolute()
+else:
+    # Running as script
+    BASE_DIR = Path(__file__).parent.absolute()
+
 DATA_DIR = BASE_DIR / "data"
 LOGS_DIR = BASE_DIR / "logs"
 CONFIG_FILE = DATA_DIR / "config.json"
