@@ -106,11 +106,12 @@ def set_last_csv_hash(hash_value):
 
 def filter_active_prices(df):
     """Filter to only include currently active prices"""
-    today = datetime.now()
+    # Use pandas Timestamp to handle timezone-aware comparisons
+    today = pd.Timestamp.now(tz='UTC')
 
     # Parse dates
-    df['EffectiveStartDate'] = pd.to_datetime(df['EffectiveStartDate'], errors='coerce')
-    df['EffectiveEndDate'] = pd.to_datetime(df['EffectiveEndDate'], errors='coerce')
+    df['EffectiveStartDate'] = pd.to_datetime(df['EffectiveStartDate'], errors='coerce', utc=True)
+    df['EffectiveEndDate'] = pd.to_datetime(df['EffectiveEndDate'], errors='coerce', utc=True)
 
     # Filter active prices (start date <= today AND end date >= today or far future)
     active_df = df[

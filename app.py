@@ -8,15 +8,26 @@ import logging
 from functools import wraps
 import subprocess
 import tempfile
+import sys
 from pathlib import Path
 from datetime import datetime
 
 from config import config, BASE_DIR, DB_NAME, PORT, HOST, LOGGING_CONFIG
 
+# Determine template folder location
+if getattr(sys, 'frozen', False):
+    # Running as compiled executable - templates are in _MEIPASS
+    template_folder = str(Path(sys._MEIPASS) / 'templates')
+    static_folder = str(Path(sys._MEIPASS) / 'static') if (Path(sys._MEIPASS) / 'static').exists() else None
+else:
+    # Running as script
+    template_folder = str(BASE_DIR / 'templates')
+    static_folder = str(BASE_DIR / 'static')
+
 # Initialize Flask app
 app = Flask(__name__,
-            template_folder=str(BASE_DIR / 'templates'),
-            static_folder=str(BASE_DIR / 'static'))
+            template_folder=template_folder,
+            static_folder=static_folder)
 
 # Configure logging
 import logging.config
