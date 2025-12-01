@@ -384,7 +384,7 @@
             <div class="col-md-5">
                 <div class="card">
                     <div class="card-header">
-                        <h6 class="mb-0"><i class="bi bi-percent"></i> Margin Calculator</h6>
+                        <h6 class="mb-0"><i class="bi bi-percent"></i> Markup Calculator</h6>
                     </div>
                     <div class="card-body margin-slider">
                         <div class="text-center mb-3">
@@ -424,8 +424,8 @@
                                 <th>Segment</th>
                                 <th>Term</th>
                                 <th>Billing</th>
-                                <th>MS Price</th>
-                                <th>Your Price</th>
+                                <th>Partner Price</th>
+                                <th>Microsoft Retail Price</th>
                                 <th>Markup %</th>
                             </tr>
                         </thead>
@@ -613,6 +613,12 @@
             row.classList.add('selected');
             selectedPrice = price;
 
+            // Snap slider to the actual markup percentage for this selection
+            const actualMarkup = parseFloat(price.MarkupPercent);
+            const sliderValue = Math.min(50, Math.max(0, actualMarkup)); // Clamp between 0-50
+            document.getElementById('marginSlider').value = sliderValue;
+            document.getElementById('marginDisplay').textContent = `${sliderValue.toFixed(1)}%`;
+
             // Update price display
             updatePriceDisplay(price);
 
@@ -626,7 +632,7 @@
         }
 
         function updatePriceDisplay(price) {
-            const margin = parseInt(document.getElementById('marginSlider').value);
+            const margin = parseFloat(document.getElementById('marginSlider').value);
             const msPrice = parseFloat(price.UnitPrice);
             const erpPrice = parseFloat(price.ERPPrice);
             const standardMarkup = parseFloat(price.MarkupPercent);
@@ -652,19 +658,19 @@
 
         // Margin slider
         document.getElementById('marginSlider').addEventListener('input', (e) => {
-            const margin = e.target.value;
-            document.getElementById('marginDisplay').textContent = `${margin}%`;
+            const margin = parseFloat(e.target.value);
+            document.getElementById('marginDisplay').textContent = `${margin.toFixed(1)}%`;
 
             if (selectedPrice) {
                 updatePriceDisplay(selectedPrice);
             }
         });
 
-        // Generate draft
+        // Generate draft - opens in new browser tab
         document.getElementById('draftBtn').addEventListener('click', async () => {
             if (!selectedPrice) return;
 
-            const margin = parseInt(document.getElementById('marginSlider').value);
+            const margin = parseFloat(document.getElementById('marginSlider').value);
             const quantity = parseInt(document.getElementById('quantityInput').value);
 
             showLoading(true);
@@ -683,8 +689,12 @@
                 });
 
                 const data = await response.json();
-                if (data.success) {
-                    showToast('Quote draft opened in Notepad', 'success');
+                if (data.success && data.html) {
+                    // Open quote in new browser tab
+                    const newWindow = window.open('', '_blank');
+                    newWindow.document.write(data.html);
+                    newWindow.document.close();
+                    showToast('Quote draft opened in new tab', 'success');
                 } else {
                     showToast('Error generating draft', 'error');
                 }

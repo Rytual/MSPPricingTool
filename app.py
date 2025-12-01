@@ -267,7 +267,7 @@ def get_price_detail(price_id):
 @app.route('/api/draft', methods=['POST'])
 @requires_auth
 def generate_draft():
-    """Generate quote draft and open in Notepad"""
+    """Generate quote draft and return as HTML for browser display"""
     try:
         data = request.get_json()
         price_id = data.get('price_id')
@@ -284,8 +284,8 @@ def generate_draft():
             return jsonify({'error': 'Price not found'}), 404
 
         # Calculate prices
-        ms_price = float(row['UnitPrice'])  # What Microsoft charges us
-        erp_price = float(row['ERPPrice']) if row['ERPPrice'] else 0  # Our standard price
+        ms_price = float(row['UnitPrice'])  # What Microsoft charges us (Partner Price)
+        erp_price = float(row['ERPPrice']) if row['ERPPrice'] else 0  # Microsoft Retail Price
 
         # Calculate standard markup
         standard_markup = 0
@@ -315,12 +315,12 @@ Segment:        {row['Segment']}
 
 PRICING BREAKDOWN (per user/month)
 -----------------------------------
-Microsoft Cost:     ${ms_price:.2f}
-Your Markup:        {margin}%
+Partner Price:      ${ms_price:.2f}
+Your Markup:        {margin:.1f}%
 Quote Price:        ${final_price:.2f}
 Profit/License:     ${profit_per_license:.2f}
 
-Standard Price:     ${erp_price:.2f} (Standard Markup: {standard_markup:.1f}%)
+MS Retail Price:    ${erp_price:.2f} (Standard Markup: {standard_markup:.1f}%)
 
 CONTRACT DETAILS
 ----------------
@@ -354,20 +354,101 @@ NOTES
 
         conn.close()
 
-        # Write to temporary file and open in Notepad
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.txt', delete=False, encoding='utf-8') as f:
-            f.write(draft_text)
-            temp_path = f.name
+        # Generate HTML page for browser display
+        html_content = f"""<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quote Draft - {row['ProductTitle']}</title>
+    <style>
+        body {{
+            font-family: 'Consolas', 'Courier New', monospace;
+            background-color: #1e1e1e;
+            color: #d4d4d4;
+            padding: 20px;
+            margin: 0;
+            line-height: 1.4;
+        }}
+        .container {{
+            max-width: 800px;
+            margin: 0 auto;
+            background-color: #2d2d2d;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        }}
+        pre {{
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            margin: 0;
+            font-size: 14px;
+        }}
+        .actions {{
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid #444;
+            text-align: center;
+        }}
+        button {{
+            background-color: #0078d4;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            margin: 0 10px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+        }}
+        button:hover {{
+            background-color: #106ebe;
+        }}
+        @media print {{
+            body {{
+                background-color: white;
+                color: black;
+            }}
+            .container {{
+                background-color: white;
+                box-shadow: none;
+            }}
+            .actions {{
+                display: none;
+            }}
+        }}
+    </style>
+</head>
+<body>
+    <div class="container">
+        <pre>{draft_text}</pre>
+        <div class="actions">
+            <button onclick="window.print()">Print Quote</button>
+            <button onclick="copyToClipboard()">Copy to Clipboard</button>
+            <button onclick="window.close()">Close</button>
+        </div>
+    </div>
+    <script>
+        function copyToClipboard() {{
+            const text = document.querySelector('pre').textContent;
+            navigator.clipboard.writeText(text).then(() => {{
+                alert('Quote copied to clipboard!');
+            }}).catch(err => {{
+                console.error('Failed to copy:', err);
+                // Fallback for older browsers
+                const textarea = document.createElement('textarea');
+                textarea.value = text;
+                document.body.appendChild(textarea);
+                textarea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textarea);
+                alert('Quote copied to clipboard!');
+            }});
+        }}
+    </script>
+</body>
+</html>"""
 
-        # Open in Notepad (Windows)
-        try:
-            subprocess.Popen(['notepad.exe', temp_path])
-        except Exception as e:
-            logger.warning(f"Could not open Notepad: {e}")
-            # Return the draft text if Notepad fails
-            return jsonify({'draft': draft_text})
-
-        return jsonify({'success': True, 'file': temp_path})
+        return jsonify({'success': True, 'html': html_content})
 
     except Exception as e:
         logger.error(f"Error generating draft: {e}", exc_info=True)
