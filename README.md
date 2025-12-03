@@ -276,16 +276,75 @@ For access outside your local network:
 
 ---
 
-## Windows Service Deployment
+## Server Deployment (24/7 Operation)
 
-For 24/7 operation on a server:
+For running the pricing tool on a server with 24/7 availability, choose one of the following methods:
 
-### Prerequisites
+### Method 1: Scheduled Task (Recommended)
+
+This method provides 24/7 web access AND tray icon access when you RDP into the server. No additional software or code changes required.
+
+**How it works:**
+- Application starts automatically at system boot (before any user logs in)
+- Web interface available 24/7 at `http://server-name:5000`
+- When you RDP into the server, the tray icon is visible in your session
+- You can update CSV files via the tray icon
+- Application continues running after you disconnect
+
+**Setup (Run as Administrator):**
+
+1. Open Command Prompt as Administrator
+
+2. Create the scheduled task (replace `DOMAIN\Username` with your account):
+   ```cmd
+   schtasks /create /tn "MSPPricingTool" /tr "C:\MSPPriceTool\MSP_NCE_Pricing_Tool.exe" /sc onstart /ru "DOMAIN\Username" /rp * /rl highest
+   ```
+
+3. Enter your password when prompted (stored securely by Windows)
+
+4. Verify the task was created:
+   ```cmd
+   schtasks /query /tn "MSPPricingTool"
+   ```
+
+5. Configure Windows Firewall (if not already done):
+   ```cmd
+   netsh advfirewall firewall add rule name="MSP Pricing Tool" dir=in action=allow protocol=TCP localport=5000
+   ```
+
+**Managing the Scheduled Task:**
+
+```cmd
+:: Run the task manually
+schtasks /run /tn "MSPPricingTool"
+
+:: Stop the task (ends the application)
+schtasks /end /tn "MSPPricingTool"
+
+:: Delete the task
+schtasks /delete /tn "MSPPricingTool" /f
+
+:: View task status
+schtasks /query /tn "MSPPricingTool" /v
+```
+
+---
+
+### Method 2: Windows Service with NSSM (Alternative)
+
+This method runs the application as a true Windows service. Use this if you need the application managed by Windows Services (sc.exe, services.msc).
+
+**Important Limitation:** Windows services run in an isolated session (Session 0) and cannot display GUI elements. This means:
+- No system tray icon available
+- CSV updates must be done manually by placing files in the application folder
+- Future enhancement: Web-based CSV upload would require code changes to `app.py` and `query.html`
+
+**Prerequisites:**
 
 1. Download NSSM from https://nssm.cc
 2. Extract `nssm.exe` to `C:\Windows\System32` or add to PATH
 
-### Installation
+**Installation:**
 
 1. Run as Administrator:
    ```cmd
@@ -298,7 +357,7 @@ For 24/7 operation on a server:
    - Add firewall rule for port 5000
    - Start the service
 
-### Service Management
+**Service Management:**
 
 ```cmd
 nssm start MSPPricingTool
@@ -307,6 +366,30 @@ nssm restart MSPPricingTool
 nssm status MSPPricingTool
 nssm remove MSPPricingTool confirm
 ```
+
+**Updating CSV with Service Method:**
+
+Since there is no tray icon, update pricing data by:
+1. Stop the service: `nssm stop MSPPricingTool`
+2. Replace the CSV file in `C:\MSPPriceTool\`
+3. Delete the database to force re-import: `del C:\MSPPriceTool\data\nce_pricing.db`
+4. Start the service: `nssm start MSPPricingTool`
+
+---
+
+### Method Comparison
+
+| Feature | Scheduled Task | Windows Service (NSSM) |
+|---------|----------------|------------------------|
+| 24/7 Web Access | Yes | Yes |
+| Starts at Boot | Yes | Yes |
+| Tray Icon | Yes (when RDP connected) | No |
+| CSV Update | Tray icon (easy) | Manual file copy |
+| Prerequisites | None | NSSM download |
+| Code Changes | None | None (unless adding web upload) |
+| Managed via | Task Scheduler | Services console |
+
+**Recommendation:** Use Method 1 (Scheduled Task) for most deployments. It provides all functionality with no additional software.
 
 ---
 
