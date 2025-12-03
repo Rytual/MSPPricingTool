@@ -58,3 +58,10 @@ Desktop.ini
 # Development files
 .claude/
 price-prompt.txt
+dist/
+nul
+
+# Screenshots (development only)
+Screenshot*.png
+partner-layout.png
+new-screenshot.png

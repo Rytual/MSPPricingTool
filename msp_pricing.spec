@@ -8,6 +8,7 @@ a = Analysis(
     binaries=[],
     datas=[
         ('templates', 'templates'),
+        ('static', 'static'),
         ('Nov_NCE_LicenseBasedPL_GA_US.csv', '.'),
     ],
     hiddenimports=[
