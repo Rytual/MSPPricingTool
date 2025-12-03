@@ -93,38 +93,28 @@ Key capabilities:
 
 This is the recommended method for most users.
 
-1. **Download the latest release**
+1. **Download the repository as ZIP**
    ```
-   Navigate to: https://github.com/Rytual/MSPPricingTool/releases
-   Download: MSP_NCE_Pricing_Tool.exe
-   ```
-
-2. **Create installation directory**
-   ```
-   C:\MSPPriceTool\
+   Navigate to: https://github.com/Rytual/MSPPricingTool
+   Click "Code" -> "Download ZIP"
    ```
 
-3. **Copy required files**
+2. **Extract to installation directory**
    ```
-   MSP_NCE_Pricing_Tool.exe
-   Nov_NCE_LicenseBasedPL_GA_US.csv (or your pricing CSV)
-   ```
-
-4. **Create templates folder and copy template**
-   ```
-   C:\MSPPriceTool\templates\
-   Copy query.html to templates folder
+   Extract contents to: C:\MSPPriceTool\
    ```
 
-5. **Run the application**
+3. **Run the application**
    ```
    Double-click MSP_NCE_Pricing_Tool.exe
    ```
 
-6. **Access the web interface**
+4. **Access the web interface**
    ```
    Open browser: http://localhost:5000
    ```
+
+The application includes all required files. Templates and static assets are bundled within the EXE. The `data/` and `logs/` folders are created automatically on first run.
 
 ### Option 2: Clone and Build from Source
 
@@ -158,9 +148,10 @@ Use this method if you need to modify the application or prefer to build from so
 
 6. **Deploy**
    - Copy `dist\MSP_NCE_Pricing_Tool.exe` to your installation directory
-   - Copy `templates\` folder to the same directory
    - Copy your NCE pricing CSV file to the same directory
    - Run the executable
+
+   Note: Templates and static assets are bundled into the EXE during build.
 
 ---
 
@@ -339,37 +330,40 @@ This creates a scheduled task that runs every Sunday at 2:00 AM.
 
 ## Architecture
 
-### Directory Structure
+### Directory Structure (Deployment)
 
 ```
-MSPPriceTool/
-├── MSP_NCE_Pricing_Tool.exe    # Main application
+MSPPricingTool/
+├── MSP_NCE_Pricing_Tool.exe         # Main application (templates/static bundled)
+├── Nov_NCE_LicenseBasedPL_GA_US.csv # Pricing data
+├── install_service.bat              # Service installer
+├── setup_auto_update.bat            # Scheduled task setup
+├── microsoft-partner.png            # Microsoft Partner logo
+├── README.md                        # Documentation
+├── NETWORK_ACCESS.md                # Network configuration guide
+├── data/                            # Created at runtime
+│   ├── nce_pricing.db               # SQLite database
+│   ├── config.json                  # Configuration
+│   └── .key                         # Encryption key (for API tokens)
+└── logs/                            # Created at runtime
+    └── app.log                      # Application logs
+```
+
+### Source Code Structure (Repository)
+
+```
+├── MSP_NCE_Pricing_Tool.exe    # Pre-built executable
+├── main.py                     # Application entry point
+├── config.py                   # Configuration management
+├── update_db.py                # Database and CSV/API operations
+├── app.py                      # Flask web server and REST API
+├── tray.py                     # System tray interface
 ├── templates/
-│   └── query.html              # Web user interface
-├── data/                       # Created at runtime
-│   ├── nce_pricing.db          # SQLite database
-│   ├── config.json             # Configuration (encrypted)
-│   └── .key                    # Encryption key
-├── logs/                       # Created at runtime
-│   └── app.log                 # Application logs
-├── Nov_NCE_LicenseBasedPL_GA_US.csv  # Pricing data
-├── install_service.bat         # Service installer
-├── setup_auto_update.bat       # Scheduled task setup
-└── auto_update.py              # Update script
-```
-
-### Source Code Structure
-
-```
-├── main.py                 # Application entry point
-├── config.py               # Configuration management
-├── update_db.py            # Database and CSV/API operations
-├── app.py                  # Flask web server and REST API
-├── tray.py                 # System tray interface
-├── templates/
-│   └── query.html          # Web UI (Bootstrap 5)
-├── requirements.txt        # Python dependencies
-└── msp_pricing.spec        # PyInstaller build configuration
+│   └── query.html              # Web UI (Bootstrap 5)
+├── static/
+│   └── microsoft-partner.png   # Microsoft Partner logo
+├── requirements.txt            # Python dependencies
+└── msp_pricing.spec            # PyInstaller build configuration
 ```
 
 ### Technology Stack
